@@ -1,1 +1,15 @@
-ddfsdf
+# .gitignore file specifies files and folders that should be ignored
+
+
+# Create a repository
+git init
+
+
+# Check the status 
+git status
+
+
+
+# to create a snapshot
+git add -A
+git commit -m “message”
