@@ -1,7 +1,7 @@
 from flask import Flask, request, abort
 # add request to allow us to request data 
 # opposit as java we say from then import. 
-from config import me 
+from config import me, db
 # this is how you import other files in your project
 import json
 from mock_data import catalog, coupon_codes
@@ -30,6 +30,12 @@ def anything():
 #####################################################
 
 
+def fix_id(record):
+    record["_id"] = str(record["_id"])
+    return record
+
+
+
 @app.get("/api/version")
 def version():
     v = {
@@ -47,33 +53,40 @@ def version():
 def about():
     return json.dumps(me)
 
-# End point to allow the clients to request what is the store and then the store and products displayed in the catalog
+# Read the database
 @app.get('/api/catalog')
 def get_catalog():
-    return json.dumps(catalog)
+    #products is the colection. filter inside find empty means no filter
+    # cursor is a dumbed down list. Only travel with for loop.
+    cursor = db.products.find({})
+    results = []
+
+    for product in cursor:
+        results.append(fix_id(product))
+
+    return json.dumps(results)
 
 
 
-# end point to allow the user to add products to their cart For this END POINT we must add request to the top import for flask. 
-    # product is the variable we store it in only because we know its products. We choose the variable name. 
+# write into the database
 @app.post('/api/catalog')
 def save_product():
     # this is reading the payload that we are calling product 
     product = request.get_json()
 
-    product["_id"] = len(catalog)
-    # len is a global function in python to show the length of objects or characters in a string. 
-    catalog.append(product)
+    #this is saving to the database
+    db.products.insert_one(product)
 
-    return json.dumps(product)
+    return json.dumps(fix_id(product)) 
 
 # create a get /ai/report/total
 # that sends total value of your catalong (sum of all prices)
 
 @app.get('/api/report/total')
 def report_total():
+    cursor = db.products.find({})
     total = 0
-    for prod in catalog:
+    for prod in cursor:
         # total = total + prod["price"] 
         # above line and below line are same lower one is just shorter 
         total += prod["price"]
@@ -93,10 +106,12 @@ def report_total():
 # the cat is a variable you can call what ever you want but make sure to pass the same name below
 # categories are scented and unscented and organic
 def get_by_category(cat):
-    results = []
-    for prod in catalog:
-        if prod["category"] == cat: # strict comparison
-            results.append(prod)
+    cursor = db.products.find({ "category": cat }) #travel cursor/aka list 
+    results = []                   #filter on database because its faster
+    # for prod in cursor:
+    #     # if prod["category"] == cat: # strict comparison
+    #     #     fix_id(prod)
+    #     #     results.append(prod)
     
     return json.dumps(results)
 
@@ -118,10 +133,24 @@ def product_search(term): #define your function and pass it the variable
 def products_lower(price):
     results = []
     real_price = float(price) # turn your number into a string.
+    cursor = db.products.find({ 'price': {'$lte': real_price} })
 
     for prod in catalog:
-        if prod['price'] <= real_price:
-            results.append(prod)
+        fix_id(prod)
+        results.append(prod)
+
+    return json.dumps(results)
+
+# get price greater or equal
+@app.get("/api/products/greater/<price>")
+def products_greater(price):
+    results = []
+    real_price = float(price)
+    cursor = db.products.find({'price': {'$lte': real_price}})
+
+    for prod in cursor:
+        fix_id(prod)
+        results.append(prod)
 
     return json.dumps(results)
 
@@ -137,28 +166,34 @@ def products_lower(price):
 # get all coupons (get)
 @app.get("/api/coupons")
 def get_coupons():
-    return json.dumps(coupon_codes)
+    cursor = db.coupons.find({})
+    results = []
+    for coupon in cursor:
+        fix_id(coupon)
+        results.append(coupon)
+
+    return json.dumps(results)
 
 
 # save a coupon (post)
 @app.post("/api/coupons")
 def save_coupons():
     coupon = request.get_json()
-    coupon["_id"] = len(coupon_codes)
+    
+    db.coupons.insert_one(coupon)
+    fix_id(coupon)
 
-    coupon_codes.append(coupon)
     return json.dumps(coupon)
 
 # get coupon and serach coupong with the code and return object/dictionary if exists
 @app.get("/api/coupons/<code>")
 def search_coupon(code):
-    for coupon in coupon_codes:
-        if coupon["code"].lower() == code.lower():
-            return json.dumps(coupon)
-        
-    return abort(404, "Invalid Coupon Code") #return a not found 404 code 
+    coupon = db.coupons.find_one({"code": {'$regex': f"^{code}$", '$options': "i"}})
+    if not coupon:
+        return abort(404, "Invalid Coupon Code") #return a not found 404 code 
 
-
+    fix_id(coupon)
+    return json.dumps(coupon)
 
 
 
