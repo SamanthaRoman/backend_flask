@@ -52,3 +52,24 @@ catalog = [
         "_id": "7",
     }
 ]
+
+
+coupon_codes = [
+    {
+        "code": "qwerty",
+        "discount": 10
+    },
+    {
+        "code": "ytrewq",
+        "discount": 20
+    },
+    {
+        "code": "halfy",
+        "discount": 50
+    },
+    {
+        "code": "godmode",
+        "discount": 99
+    }
+
+]

@@ -5,3 +5,5 @@ me = {
     "email": "samantharaeroman@gmail.com",
     "github_url": "https://github.com/SamanthaRoman"
 }
+
+con_str = "mongodb+srv://fsdi:test123@cluster0.ohuujef.mongodb.net/?retryWrites=true&w=majority"

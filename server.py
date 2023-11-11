@@ -1,10 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, abort
 # add request to allow us to request data 
 # opposit as java we say from then import. 
 from config import me 
 # this is how you import other files in your project
 import json
-from mock_data import catalog
+from mock_data import catalog, coupon_codes
 
 
 # flask is a class thats why it is capital F
@@ -88,17 +88,80 @@ def report_total():
 
 # get all products for a given category
 
-@app.get("/api/product/<cat>")
+@app.get("/api/products/<cat>")
 # <cat> is a category variable 
 # the cat is a variable you can call what ever you want but make sure to pass the same name below
+# categories are scented and unscented and organic
 def get_by_category(cat):
     results = []
     for prod in catalog:
-        if prod["category"] == cat:
+        if prod["category"] == cat: # strict comparison
             results.append(prod)
     
     return json.dumps(results)
 
 
-# use app.run to run it and use the script in the terminal command: python3 filename
-app.run(debug=True)
+# get search simple variable can add variable <term>
+@app.get("/api/products/search/<term>") # decorate your function - create any path you like
+def product_search(term): #define your function and pass it the variable 
+    results = []
+    for prod in catalog:
+        if term.lower() in prod['title'].lower(): # if term contains not case sensative by parsing both to lowers
+            results.append(prod)
+
+    return json.dumps(results)
+
+
+
+# create an endpoint to get all the products with a price then a lower given number 100 or less
+@app.get("/api/products/lower/<price>")
+def products_lower(price):
+    results = []
+    real_price = float(price) # turn your number into a string.
+
+    for prod in catalog:
+        if prod['price'] <= real_price:
+            results.append(prod)
+
+    return json.dumps(results)
+
+
+
+
+#####################################################
+###########        Coupons        ###################
+#####################################################
+
+
+
+# get all coupons (get)
+@app.get("/api/coupons")
+def get_coupons():
+    return json.dumps(coupon_codes)
+
+
+# save a coupon (post)
+@app.post("/api/coupons")
+def save_coupons():
+    coupon = request.get_json()
+    coupon["_id"] = len(coupon_codes)
+
+    coupon_codes.append(coupon)
+    return json.dumps(coupon)
+
+# get coupon and serach coupong with the code and return object/dictionary if exists
+@app.get("/api/coupons/<code>")
+def search_coupon(code):
+    for coupon in coupon_codes:
+        if coupon["code"].lower() == code.lower():
+            return json.dumps(coupon)
+        
+    return abort(404, "Invalid Coupon Code") #return a not found 404 code 
+
+
+
+
+
+
+# # use app.run to run it and use the script in the terminal command: python3 filename
+# app.run(debug=True)
