@@ -5,13 +5,13 @@ from config import me, db
 # this is how you import other files in your project
 import json
 from mock_data import catalog, coupon_codes
-
+from flask_cors import CORS
 
 # flask is a class thats why it is capital F
 # this is how we use classes
 
 app = Flask(__name__)
-
+CORS(app) # warning: disable CORS policy - DEV ONLY
 
 # the root page has no text after the slash
 @app.get("/")
